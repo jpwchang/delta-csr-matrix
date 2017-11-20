@@ -68,7 +68,7 @@ def main():
         if "synthetic" in args.test:
             synthetic_data_test(1000000, 75000, 5, 5000, 500)
         if "synthetic-noisy" in args.test:
-            synthetic_data_test_noisy(1000000, 75000, 5, 5000, 500, 0.001)
+            synthetic_data_test_noisy(1000000, 75000, 5, 5000, 500, 1e-4)
 
 if __name__ == '__main__':
     main()

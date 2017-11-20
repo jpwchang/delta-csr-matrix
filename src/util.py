@@ -1,16 +1,17 @@
 import numpy as np
 from scipy import sparse
 
-def get_nonzero_indices(row):
+def get_nonzero(row):
     """
-    Given a row from a matrix, return a list of indices in the row that have
-    nonzero values
+    Given a row from a matrix, return a list of (index, value) pairs for each
+    nonzero entry in the row
     """
     if sparse.isspmatrix_csr(row):
-        return row.indices
+        return list(zip(row.indices, row.data))
     else:
         row = np.asarray(row)
-        return np.nonzero(row)[0]
+        indices = np.nonzero(row)[0]
+        return list(zip(indices, row[indices]))
 
 def overlap(a, b):
     """
