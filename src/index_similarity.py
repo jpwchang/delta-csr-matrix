@@ -8,7 +8,7 @@ class IndexSimilarityDetector():
     the number of nonzero indices in common between two vectors.
 
     In this implementation, objects are assumed to be represented as lists or
-    arrays of nonzero indices
+    arrays of (index, value) pairs.
 
     Optionally, matching candidates can be selected at random to improve
     performance.
