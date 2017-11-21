@@ -50,5 +50,10 @@ class IndexSimilarityDetector():
             all_matches = np.random.choice(all_matches, size=self.random_samples, replace=False)
         # the candidate that appears the most times in the list of candidates
         # matches in the most indices and is thus the best choice
-        return Counter(all_matches).most_common(1)[0][0]
+        match, count = Counter(all_matches).most_common(1)[0]
+        if count / len(new_obj) > 0.5:
+            return match
+        else:
+            # insufficient overlap could actually lead to increased memory use
+            return -1
 

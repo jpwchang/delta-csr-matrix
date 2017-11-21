@@ -11,7 +11,8 @@ FP_TOLERANCE = 1e-5
 class CorrectnessTests(unittest.TestCase):
 
     def setUp(self):
-        self.csr = sparse.random(M, N, format='csr')
+        block = sparse.random(M // 2, N, format='csr')
+        self.csr = sparse.vstack([block, block], format='csr')
         self.dense = self.csr.toarray()
         self.delta_csr = delta_csr_matrix(self.dense)
 

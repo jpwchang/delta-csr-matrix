@@ -1,18 +1,6 @@
 import numpy as np
 from scipy import sparse
 
-def get_nonzero(row):
-    """
-    Given a row from a matrix, return a list of (index, value) pairs for each
-    nonzero entry in the row
-    """
-    if sparse.isspmatrix_csr(row):
-        return list(zip(row.indices, row.data))
-    else:
-        row = np.asarray(row)
-        indices = np.nonzero(row)[0]
-        return list(zip(indices, row[indices]))
-
 def overlap(a, b):
     """
     Given two arrays in sorted ascending order, compute the number of elements

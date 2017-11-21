@@ -28,11 +28,12 @@ class HashSimilarityDetector():
         # the same as block '0000' at position 9) so to encode position information
         # we prefix each block with its location prior to hashing
         for i in range(len(blocks)):
-            key = "%d%s" % (i, blocks[i])
-            if key in self.table:
-                self.table[key].append(obj_identifier)
-            else:
-                self.table[key] = [obj_identifier]
+            if '1' in blocks[i]:
+                key = "%d%s" % (i, blocks[i])
+                if key in self.table:
+                    self.table[key].append(obj_identifier)
+                else:
+                    self.table[key] = [obj_identifier]
 
     def get_best_match(self, new_obj):
         """
@@ -43,10 +44,13 @@ class HashSimilarityDetector():
         # now hash each block and look up matches. Keep track of all candidates
         # that match at some hashes
         all_matches = []
+        nnz = 0
         for i in range(len(blocks)):
-            key = "%d%s" % (i, blocks[i])
-            if key in self.table:
-                all_matches += self.table[key]
+            if '1' in blocks[i]:
+                nnz += 1
+                key = "%d%s" % (i, blocks[i])
+                if key in self.table:
+                    all_matches += self.table[key]
         # if the list of possible matches is empty, signal that no candidate
         # was found.
         if len(all_matches) == 0:
@@ -57,6 +61,10 @@ class HashSimilarityDetector():
             all_matches = np.random.choice(all_matches, size=self.random_samples, replace=False)
         # the candidate that appears the most times in the list of candidates
         # matches in the most indices and is thus the best choice
-        return Counter(all_matches).most_common(1)[0][0]
-
+        match, count = Counter(all_matches).most_common(1)[0]
+        if count / nnz > 0.5:
+            return match
+        else:
+            # insufficient overlap could actually lead to increased memory use
+            return -1
 

@@ -15,6 +15,17 @@ from datetime import datetime
 from src.delta import delta_csr_matrix
 from src.util import *
 
+def msnbc_data_loader(msnbc_path):
+    """
+    Generator that yields rows of the MSNBC dataset
+    """
+    with open(msnbc_path) as fp:
+        for line in fp:
+            row = np.zeros(17) # there are 17 categories in the dataset
+            for category_id in line.split():
+                row[int(category_id)-1] += 1
+            yield row
+
 def synthetic_data_test(M, N, R, block_size, n_samples):
     """
     Test the memory savings of delta encoding using a synthetic dataset that has
@@ -54,21 +65,38 @@ def synthetic_data_test_noisy(M, N, R, block_size, n_samples, noise_level):
     dataset_delta = delta_csr_matrix(dataset, block_size=block_size, n_samples=n_samples)
     print("[%s] Memory usage of delta CSR matrix is %d bytes" % (datetime.now().isoformat(), delta_csr_memory_usage(dataset_delta)))
 
+def msnbc_data_test(msnbc_path, block_size, n_samples):
+    """
+    Test the memory savings of delta encoding when used to store the MSNBC.com
+    Anonymous Web Data dataset.
+    """
+    print("[%s] Starting MSNBC data test..." % datetime.now().isoformat())
+    dense_vectors = list(msnbc_data_loader(msnbc_path))
+    dense_msnbc = np.vstack(dense_vectors)
+    dataset = sparse.csr_matrix(dense_msnbc)
+    print("[%s] Memory usage of CSR matrix is %d bytes" % (datetime.now().isoformat(), csr_memory_usage(dataset)))
+    dataset_delta = delta_csr_matrix(msnbc_data_loader(msnbc_path), dtype=np.int64, block_size=block_size, n_samples=n_samples)
+    assert((dataset_delta.toarray() == dense_msnbc).all())
+    print("[%s] Memory usage of delta CSR matrix is %d bytes" % (datetime.now().isoformat(), delta_csr_memory_usage(dataset_delta)))
+
 def main():
     parser = argparse.ArgumentParser(description="Run delta CSR matrix demo workloads")
-    parser.add_argument("-t", "--test", nargs="+", choices=["synthetic", "synthetic-noisy"],
+    parser.add_argument("-t", "--test", nargs="+", choices=["synthetic", "synthetic-noisy", "msnbc"],
                         help="specify which tests to run (if omitted, all tests are run)")
     args = parser.parse_args()
     if not args.test:
         # run all tests
         synthetic_data_test(1000000, 75000, 5, 5000, 500)
         synthetic_data_test_noisy(1000000, 75000, 5, 5000, 500, 0.001)
+        msnbc_data_test("/home/jpchang/Downloads/msnbc990928.seq", 17, 500)
     else:
         # run only the tests specified by the user
         if "synthetic" in args.test:
             synthetic_data_test(1000000, 75000, 5, 5000, 500)
         if "synthetic-noisy" in args.test:
             synthetic_data_test_noisy(1000000, 75000, 5, 5000, 500, 1e-4)
+        if "msnbc" in args.test:
+            msnbc_data_test("/home/jpchang/Downloads/msnbc990928.seq", 17, 500)
 
 if __name__ == '__main__':
     main()

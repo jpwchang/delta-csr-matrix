@@ -3,6 +3,7 @@ Modified CSR matrix format which delta-compresses similar rows to reduce
 memory usage
 """
 
+import types
 import numpy as np
 
 from scipy.sparse.compressed import _cs_matrix
@@ -106,8 +107,13 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
                     # standard CSR matrix with no delta encoding
                     self.deltas = arg1[3] if len(arg1) > 3 else np.arange(self.shape[0])
 
+        # case 3: instantiate from generator object
+        elif isinstance(arg1, types.GeneratorType):
+            self._construct_from_iterable(arg1, getdtype(dtype, default='float'), 
+                                          np.int32, block_size,
+                                          n_samples, shape)
 
-        # case 3: instantiate from dense matrix / array
+        # case 4: instantiate from dense matrix / array
         else:
             try:
                 arg1 = np.asarray(arg1)
