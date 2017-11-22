@@ -48,6 +48,8 @@ def transform_dataset(dataset, out_path):
                 true_index = int(raw_value) + accum
                 row_strs.append("%d:1" % true_index)
                 accum += feature_sizes[feature]
+            fp.write(' '.join(row_strs))
+            fp.write('\n')
 
 def main():
     if len(sys.argv) < 3:
