@@ -11,10 +11,11 @@ class HashSimilarityDetector():
     In this implementation, objects are assumed to be represented as strings.
     """
 
-    def __init__(self, block_size, random_samples=None):
+    def __init__(self, block_size, random_samples=None, limit=None):
         self.table = {}
         self.block_size = block_size
         self.random_samples = random_samples
+        self.limit = limit
 
     def add(self, new_obj, obj_identifier):
         """
@@ -31,6 +32,8 @@ class HashSimilarityDetector():
             if '1' in blocks[i]:
                 key = "%d%s" % (i, blocks[i])
                 if key in self.table:
+                    if self.limit is not None and len(self.table[key]) > self.limit:
+                        self.table[key] = self.table[key][(self.limit // 2):]
                     self.table[key].append(obj_identifier)
                 else:
                     self.table[key] = [obj_identifier]

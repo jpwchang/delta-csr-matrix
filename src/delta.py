@@ -55,7 +55,7 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
 
     format = "dcsr"
 
-    def __init__(self, arg1, block_size=None, n_samples=None, shape=None, dtype=None, copy=False):
+    def __init__(self, arg1, block_size=None, n_samples=None, n_history=None, shape=None, dtype=None, copy=False):
         _data_matrix.__init__(self)
 
         # case 1: instantiate from another sparse matrix
@@ -63,7 +63,7 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
             if arg1.format == self.format:
                 self._set_self(arg1)
             elif arg1.format == "csr":
-                self._csr_to_delta_csr(arg1, block_size, n_samples)
+                self._csr_to_delta_csr(arg1, block_size, n_samples, n_history)
             else:
                 raise NotImplementedError("Instantiation from sparse matrix not yet ready")
 
@@ -129,7 +129,7 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
         self.deltas = other.deltas
         self.shape = other.shape
 
-    def _csr_to_delta_csr(self, other, block_size, n_samples):
+    def _csr_to_delta_csr(self, other, block_size, n_samples, n_history):
         """
         Convert a CSR matrix into a delta CSR matrix in-place. After this
         operation is complete, the original CSR matrix other will be
@@ -147,7 +147,7 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
         # use a HashSimilarityDetector to locate reference rows
         if block_size is None:
             block_size = self.shape[1] // 10
-        sd = HashSimilarityDetector(block_size, n_samples)
+        sd = HashSimilarityDetector(block_size, n_samples, n_history)
 
         # now we iterate over every row, checking if it can be encoded as a
         # delta relative to some previous row
