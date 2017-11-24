@@ -24,7 +24,7 @@ def get_header_sizes(dataset):
     each header in the original datset.
     """
     header_sizes = {}
-    for header in dataset.header:
+    for header in dataset.columns:
         if header == "caseid":
             # caseid is just an index and we should skip it
             continue
@@ -44,7 +44,7 @@ def transform_dataset(dataset, out_path):
             row_strs = ["+1"]
             for feature in features:
                 # get the original value of the categorical feature
-                raw_value = row.getattr(feature)
+                raw_value = getattr(row, feature)
                 true_index = int(raw_value) + accum
                 row_strs.append("%d:1" % true_index)
                 accum += feature_sizes[feature]
