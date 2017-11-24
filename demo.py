@@ -5,12 +5,16 @@ Specifically, the following cases are evaluated for memory usage:
 (b) Synthetic dataset containing r repeats of each row plus random noise
 (c) Real-world dataset of features extracted from URLs
 In addition, performance of scalar arithmetic operations is tested.
+
+Requires scikit-learn as an additional dependency for reading the svmlight
+formatted census dataset
 """
 
 import argparse
 import numpy as np
 from scipy import sparse
 from datetime import datetime
+from sklearn.datasets import load_svmlight_file
 
 from src.delta import delta_csr_matrix
 from src.util import *
@@ -79,9 +83,20 @@ def msnbc_data_test(msnbc_path, block_size, n_samples):
     assert((dataset_delta.toarray() == dense_msnbc).all())
     print("[%s] Memory usage of delta CSR matrix is %d bytes" % (datetime.now().isoformat(), delta_csr_memory_usage(dataset_delta)))
 
+def census_data_test(census_data_path, block_size, n_samples):
+    """
+    Test the memory savings of delta encoding when used to store the 1990 US
+    Census dataset.
+    """
+    print("[%s] Starting 1990 US Census data test..." % datetime.now().isoformat())
+    dataset, _ = load_svmlight_file(census_data_path)
+    print("[%s] Memory usage of CSR matrix is %d bytes" % (datetime.now().isoformat(), csr_memory_usage(dataset)))
+    dataset_delta = delta_csr_matrix(dataset, block_size=block_size, n_samples=n_samples)
+    print("[%s] Memory usage of delta CSR matrix is %d bytes" % (datetime.now().isoformat(), delta_csr_memory_usage(dataset_delta)))
+
 def main():
     parser = argparse.ArgumentParser(description="Run delta CSR matrix demo workloads")
-    parser.add_argument("-t", "--test", nargs="+", choices=["synthetic", "synthetic-noisy", "msnbc"],
+    parser.add_argument("-t", "--test", nargs="+", choices=["synthetic", "synthetic-noisy", "msnbc", "census"],
                         help="specify which tests to run (if omitted, all tests are run)")
     args = parser.parse_args()
     if not args.test:
@@ -89,6 +104,7 @@ def main():
         synthetic_data_test(1000000, 75000, 5, 5000, 500)
         synthetic_data_test_noisy(1000000, 75000, 5, 5000, 500, 0.001)
         msnbc_data_test("/home/jpchang/Downloads/msnbc990928.seq", 17, 500)
+        census_data_test("/home/jpchang/Downloads/USCensus1990.svm", 50, 500)
     else:
         # run only the tests specified by the user
         if "synthetic" in args.test:
@@ -97,6 +113,8 @@ def main():
             synthetic_data_test_noisy(1000000, 75000, 5, 5000, 500, 1e-4)
         if "msnbc" in args.test:
             msnbc_data_test("/home/jpchang/Downloads/msnbc990928.seq", 17, 500)
+        if "census" in args.test:
+            census_data_test("/home/jpchang/Downloads/USCensus1990.svm", 50, 500)
 
 if __name__ == '__main__':
     main()
