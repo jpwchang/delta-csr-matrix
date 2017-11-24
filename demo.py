@@ -98,13 +98,15 @@ def main():
     parser = argparse.ArgumentParser(description="Run delta CSR matrix demo workloads")
     parser.add_argument("-t", "--test", nargs="+", choices=["synthetic", "synthetic-noisy", "msnbc", "census"],
                         help="specify which tests to run (if omitted, all tests are run)")
+    parser.add_argument("-h", "--history", type=int,
+                        help="Set the history size used during the delta CSR conversion process")
     args = parser.parse_args()
     if not args.test:
         # run all tests
         synthetic_data_test(1000000, 75000, 5, 5000, 500)
         synthetic_data_test_noisy(1000000, 75000, 5, 5000, 500, 0.001)
         msnbc_data_test("/home/jpchang/Downloads/msnbc990928.seq", 17, 500)
-        census_data_test("/home/jpchang/Downloads/USCensus1990.svm", 50, 500, 100)
+        census_data_test("/home/jpchang/Downloads/USCensus1990.svm", 50, 500, args.history)
     else:
         # run only the tests specified by the user
         if "synthetic" in args.test:
@@ -114,7 +116,7 @@ def main():
         if "msnbc" in args.test:
             msnbc_data_test("/home/jpchang/Downloads/msnbc990928.seq", 17, 500)
         if "census" in args.test:
-            census_data_test("/home/jpchang/Downloads/USCensus1990.svm", 50, 500, 100)
+            census_data_test("/home/jpchang/Downloads/USCensus1990.svm", 50, 500, args.history)
 
 if __name__ == '__main__':
     main()
