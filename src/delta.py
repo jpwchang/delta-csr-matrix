@@ -63,12 +63,7 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
             if arg1.format == self.format:
                 self._set_self(arg1)
             elif arg1.format == "csr":
-                # create a generator expression for iterating over rows of arg1
-                row_gen = (arg1[i,:] for i in range(arg1.shape[0]))
-                self._construct_from_iterable(row_gen, arg1.dtype,
-                                              get_index_dtype(maxval=max(*arg1.shape)),
-                                              block_size, n_samples, shape=arg1.shape,
-                                              data_size=arg1.data.shape[0])
+                self._csr_to_delta_csr(arg1, block_size, n_samples)
             else:
                 raise NotImplementedError("Instantiation from sparse matrix not yet ready")
 
@@ -133,6 +128,68 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
         self.indptr = other.indptr
         self.deltas = other.deltas
         self.shape = other.shape
+
+    def _csr_to_delta_csr(self, other, block_size, n_samples):
+        """
+        Convert a CSR matrix into a delta CSR matrix in-place. After this
+        operation is complete, the original CSR matrix other will be
+        invalidated.
+        """
+
+        # set the component data structures to point to those of other
+        self.data = other.data
+        self.indices = other.indices
+        self.indptr = other.indptr
+        self.shape = other.shape
+        # populate the deltas vector with default values
+        self.deltas = np.arange(self.shape[0])
+
+        # use a HashSimilarityDetector to locate reference rows
+        if block_size is None:
+            block_size = N // 10
+        sd = HashSimilarityDetector(block_size, n_samples)
+
+        # now we iterate over every row, checking if it can be encoded as a
+        # delta relative to some previous row
+        for i in range(self.shape[0]):
+            row_slice = slice(self.indptr[i], self.indptr[i+1])
+            # represent this row as a string
+            row_indices = self.indices[row_slice]
+            row_str = csr_data_to_str(row_indices, self.shape[1])
+            # look up a match among the previous rows using the 
+            # HashSimilarityDetector
+            ref = sd.get_best_match(row_str)
+            # if no match was found, we leave this row and its corresponding
+            # deltas entry untouched. We can then add it as a possible
+            # candidate reference row
+            if ref == -1:
+                sd.add(row_str, i)
+            else: # otherwise, we convert the row to a delta
+                # reconstruct the reference row
+                ref_row = np.zeros(self.shape[1])
+                start_idx = self.indptr[ref]
+                end_idx = self.indptr[ref+1]
+                ref_row[self.indices[start_idx:end_idx]] = self.data[start_idx:end_idx]
+                # reconstruct the current row
+                cur_row = np.zeros(self.shape[1])
+                cur_row[self.indices[row_slice]] = self.data[row_slice]
+                # take the difference
+                delta = cur_row - ref_row
+                # now convert the delta vector into CSR-style indices and values
+                delta_indices = np.nonzero(delta)
+                delta_data = delta[delta_indices]
+                # override the original row data with zeros, which we can later
+                # remove using eliminate_zeros to obtain the desired memory
+                # savings
+                self.data[row_slice] = 0
+                self.indices[row_slice] = 0
+                # write the delta vector into the end of the current row
+                new_data_start = self.indptr[i+1] - delta_data.shape[0]
+                self.indices[new_data_start:self.indptr[i+1]] = delta_indices
+                self.data[new_data_start:self.indptr[i+1]] = delta_data
+        # eliminate any explicit zeros that we added during the delta encoding
+        # phase
+        self.eliminate_zeros()
 
     def _append_row_data(self, row_data, num_rows_added, data_added):
         """

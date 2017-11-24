@@ -43,6 +43,12 @@ def vec_to_str(vec):
     result[nz] = '1'
     return ''.join(result)
 
+def csr_data_to_str(indices, row_length):
+    result = np.empty(row_length, dtype='object')
+    result[:] = '0'
+    result[indices] = '1'
+    return ''.join(result)
+
 def csr_memory_usage(X):
     """
     Estimate the total memory usage of the CSR matrix X
