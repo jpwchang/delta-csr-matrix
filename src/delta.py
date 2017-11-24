@@ -146,7 +146,7 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
 
         # use a HashSimilarityDetector to locate reference rows
         if block_size is None:
-            block_size = N // 10
+            block_size = self.shape[1] // 10
         sd = HashSimilarityDetector(block_size, n_samples)
 
         # now we iterate over every row, checking if it can be encoded as a
@@ -155,6 +155,7 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
             row_slice = slice(self.indptr[i], self.indptr[i+1])
             # represent this row as a string
             row_indices = self.indices[row_slice]
+            original_size = row_indices.shape[0]
             row_str = csr_data_to_str(row_indices, self.shape[1])
             # look up a match among the previous rows using the 
             # HashSimilarityDetector
@@ -176,17 +177,24 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
                 # take the difference
                 delta = cur_row - ref_row
                 # now convert the delta vector into CSR-style indices and values
-                delta_indices = np.nonzero(delta)
+                delta_indices = np.nonzero(delta)[0]
                 delta_data = delta[delta_indices]
-                # override the original row data with zeros, which we can later
-                # remove using eliminate_zeros to obtain the desired memory
-                # savings
-                self.data[row_slice] = 0
-                self.indices[row_slice] = 0
-                # write the delta vector into the end of the current row
-                new_data_start = self.indptr[i+1] - delta_data.shape[0]
-                self.indices[new_data_start:self.indptr[i+1]] = delta_indices
-                self.data[new_data_start:self.indptr[i+1]] = delta_data
+                delta_size = delta_indices.shape[0]
+                # we should never replace a row with a delta vector that has more
+                # nonzero entries than the original row, as that would increase
+                # rather than decrease memory usage
+                if delta_size < original_size:
+                    # override the original row data with zeros, which we can later
+                    # remove using eliminate_zeros to obtain the desired memory
+                    # savings
+                    self.data[row_slice] = 0
+                    self.indices[row_slice] = 0
+                    # write the delta vector into the end of the current row
+                    new_data_start = self.indptr[i+1] - delta_data.shape[0]
+                    self.indices[new_data_start:self.indptr[i+1]] = delta_indices
+                    self.data[new_data_start:self.indptr[i+1]] = delta_data
+                    # set the delta pointer for this row
+                    self.deltas[i] = ref
         # eliminate any explicit zeros that we added during the delta encoding
         # phase
         self.eliminate_zeros()

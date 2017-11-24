@@ -22,7 +22,7 @@ class CorrectnessTests(unittest.TestCase):
 
     def test_csr_to_delta_csr(self):
         delta_csr_from_csr = delta_csr_matrix(self.csr)
-        self.assertTrue((delta_csr_from_csr.toarray() == self.csr.toarray()).all(),
+        self.assertTrue((delta_csr_from_csr.toarray() == self.dense).all(),
                         msg="Arrays differ after conversion from CSR")
 
     def test_row_slicing(self):
