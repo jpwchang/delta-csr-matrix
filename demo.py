@@ -105,16 +105,13 @@ def census_data_test(census_data_path, block_size, n_samples, n_history):
     dataset_delta = delta_csr_matrix(dataset, block_size=block_size, n_samples=n_samples, n_history=n_history)
     print("[%s] Memory usage of delta CSR matrix is %d bytes" % (datetime.now().isoformat(), delta_csr_memory_usage(dataset_delta)))
 
-def headlines_data_test(headlines_data_path, block_size, n_samples, n_history):
+def url_data_test(url_data_path, block_size, n_samples, n_history):
     """
-    Test the memory savings of delta encoding when used to store the news
-    headlines dataset using bag of words features
+    Test the memory savings of delta encoding when used to store the malicious
+    URLs dataset
     """
-    print("[%s] Starting Headlines data test..." % datetime.now().isoformat())
-    df = pd.read_csv(headlines_data_path, header=0)
-    text = df.headline_text.apply(lemmatize_text)
-    dataset = CountVectorizer(stop_words="english").fit_transform(text)
-    print(dataset.shape)
+    print("[%s] Starting URL data test..." % datetime.now().isoformat())
+    dataset, _ = load_svmlight_file(url_data_path)
     print("[%s] Memory usage of CSR matrix is %d bytes" % (datetime.now().isoformat(), csr_memory_usage(dataset)))
     print("[%s] Converting CSR matrix to delta CSR..." % datetime.now().isoformat())
     dataset_delta = delta_csr_matrix(dataset, block_size=block_size, n_samples=n_samples, n_history=n_history)
@@ -122,7 +119,7 @@ def headlines_data_test(headlines_data_path, block_size, n_samples, n_history):
 
 def main():
     parser = argparse.ArgumentParser(description="Run delta CSR matrix demo workloads")
-    parser.add_argument("-t", "--test", nargs="+", choices=["synthetic", "synthetic-noisy", "msnbc", "census", "headlines"],
+    parser.add_argument("-t", "--test", nargs="+", choices=["synthetic", "synthetic-noisy", "msnbc", "census", "url"],
                         help="specify which tests to run (if omitted, all tests are run)")
     parser.add_argument("-l", "--limit", type=int,
                         help="Set the history size used during the delta CSR conversion process")
@@ -133,7 +130,7 @@ def main():
         synthetic_data_test_noisy(1000000, 75000, 5, 5000, 500, 0.001)
         msnbc_data_test("/home/jpchang/Downloads/msnbc990928.seq", 17, 500)
         census_data_test("/home/jpchang/Downloads/USCensus1990.svm", 50, None, args.limit)
-        headlines_data_test("/home/jpchang/Downloads/abcnews-date-text.csv", 10000, None, args.limit)
+        url_data_test("/home/jpchang/Downloads/malicious-urls/all_data.svm", 1000, None, args.limit)
     else:
         # run only the tests specified by the user
         if "synthetic" in args.test:
@@ -144,8 +141,8 @@ def main():
             msnbc_data_test("/home/jpchang/Downloads/msnbc990928.seq", 17, 500)
         if "census" in args.test:
             census_data_test("/home/jpchang/Downloads/USCensus1990.svm", 50, None, args.limit)
-        if "headlines" in args.test:
-            headlines_data_test("/home/jpchang/Downloads/abcnews-date-text.csv", 10000, None, args.limit)
+        if "url" in args.test:
+            url_data_test("/home/jpchang/Downloads/malicious-urls/all_data.svm", 1000, None, args.limit)
 
 if __name__ == '__main__':
     main()

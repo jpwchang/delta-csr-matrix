@@ -85,9 +85,12 @@ def transform_dataset(dataset, out_path):
             accum += len(tld_dict)
             row_str.append("%d:1" % (extension_dict[extension] + accum))
             accum += len(extension_dict)
+            filename_indices = []
             for token in tokenize(filename):
                 if token in filename_dict:
-                    row_str.append("%d:1" % (filename_dict[token] + accum))
+                    filename_indices.append(filename_dict[token])
+            for i in np.unique(sorted(filename_indices)):
+                row_str.append("%d:1" % (i + accum))
             # combine the features into an SVNlight formatted row string
             fp.write(' '.join(row_str))
             fp.write('\n')
