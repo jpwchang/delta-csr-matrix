@@ -43,4 +43,11 @@ class CorrectnessTests(unittest.TestCase):
         self.assertTrue((abs(doubled_dcsr.toarray() - doubled_dense) < FP_TOLERANCE).all(),
                         msg="Scalar multiplication results differ between dense and delta CSR matrix!")
 
+    def test_range_slicing(self):
+        slice_begin = M // 2 - 2
+        slice_end = M // 2 + 3
+        dcsr_slice = self.delta_csr[slice_begin:slice_end, :]
+        self.assertTrue((dcsr_slice.toarray() == self.dense[slice_begin:slice_end, :]).all(),
+                        msg="Sliced array contains incorrect values")
+
 unittest.main()

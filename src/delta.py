@@ -352,16 +352,48 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
             start = key[0].start if key[0].start is not None else 0
             stop = key[0].stop if key[0].stop is not None else self.shape[0]
             step = key[0].step if key[0].step is not None else 1
-            out_rows = range(start, stop, step)
+            out_rows = list(range(start, stop, step))
         else:
-            start = key[0]
-            out_rows = [key[0]]
+            start = key[0][0]
+            out_rows = key[0]
+
+        # mapping from original row indices to slice row indices
+        row_map = dict(zip(out_rows, range(len(out_rows))))
 
         # now correct each of the included rows
-        for row in out_rows:
-            pass
+        # we will create a matrix of deltas that were not included in the slice,
+        # and add to the raw matrix to get the corrected matrix
+        d_data = np.array([], dtype=raw_matrix.dtype)
+        d_indices = np.array([], dtype=raw_matrix.indices.dtype)
+        d_indptr = [0]
+        # the sliced matrix will need an adjusted deltas array
+        new_deltas = np.arange(raw_matrix.shape[0])
+        for i, row in enumerate(out_rows):
+            if self.deltas[row] not in out_rows:
+                # fetch the reference row
+                ref = self.getrow(self.deltas[row])
+                # add it to the adjustment matrix
+                d_data = np.concatenate((d_data, ref.data))
+                d_indices = np.concatenate((d_indices, ref.indices))
+                d_indptr.append(d_indices.shape[0])
+            else:
+                d_indptr.append(d_indptr[-1])
+                # the delta is still valid, but the row index needs to be updated
+                self.deltas[i] = row_map[row]
 
-        return raw_matrix
+        # build the adjustment matrix, which we will add to the raw matrix data
+        # to get the correct output matrix
+        adj_matrix = csr_matrix((d_data, d_indices, d_indptr), shape=raw_matrix.shape,
+                                dtype=raw_matrix.dtype)
+
+        # now add the adjustment matrix to the raw matrix data
+        corrected_matrix = csr_matrix((raw_matrix.data, raw_matrix.indices, raw_matrix.indptr),
+                                      shape=raw_matrix.shape, dtype=raw_matrix.dtype) + adj_matrix
+
+        return delta_csr_matrix((corrected_matrix.data, corrected_matrix.indices,
+                                corrected_matrix.indptr, new_deltas),
+                                shape=corrected_matrix.shape,
+                                dtype=corrected_matrix.dtype)
 
     def _get_row_slice(self, i, cslice):
         """
