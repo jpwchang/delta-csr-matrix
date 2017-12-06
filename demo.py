@@ -49,7 +49,7 @@ def synthetic_data_test(M, N, R, block_size, n_samples):
     """
     print("[%s] Starting basic synthetic data test..." % datetime.now().isoformat())
     print("Parameters: %d x %d matrix with repetition factor %d" % (M, N, R))
-    dataset_chunk = sparse.random(M // R, N, format='csr')
+    dataset_chunk = sparse.random(M // R, N, format='csr', random_state=6410)
     # achieve repetition by combining R copies of the chunk into a single matrix
     dataset = sparse.vstack([dataset_chunk for i in range(R)], format='csr')
     print("[%s] Memory usage of CSR matrix is %d bytes" % (datetime.now().isoformat(), csr_memory_usage(dataset)))
@@ -66,8 +66,8 @@ def synthetic_data_test_noisy(M, N, R, block_size, n_samples, noise_level):
     parameter noise_level.
     """
     print("[%s] Starting synthetic data test..." % datetime.now().isoformat())
-    print("Parameters: %d x %d matrix with repetition factor %d" % (M, N, R))
-    dataset_chunk = sparse.random(M // R, N, format='csr')
+    print("Parameters: %d x %d matrix with repetition factor %d, noise level=%f" % (M, N, R, noise_level))
+    dataset_chunk = sparse.random(M // R, N, format='csr', random_state=6410)
     chunks = [dataset_chunk]
     for i in range(R-1):
         noise = sparse.random(M // R, N, noise_level, format='csr')

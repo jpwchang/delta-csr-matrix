@@ -38,9 +38,12 @@ def vec_to_str(vec):
     result[:] = '0'
     if sparse.isspmatrix_csr(vec):
         nz = vec.indices
+        data = vec.data
     else:
         nz = np.nonzero(vec)[0]
-    result[nz] = '1'
+        data = vec[nz]
+    if nz.shape[-1] > 0:
+        result[nz] = [str(d) for d in np.around(data, decimals=1)]
     return ''.join(result)
 
 def csr_data_to_str(indices, row_length):
