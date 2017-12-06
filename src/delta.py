@@ -458,6 +458,25 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
                 if self.deltas[i] != i:
                     means[i] += means[self.deltas[i]]
             return means
+        else:
+            # we simulate the effect of adding the reference row to each delta
+            # by multiplying each reference row by how many times it is used.
+            refs, counts = np.unique(self.deltas, return_counts=True)
+            multipliers = dict(zip(refs, counts))
+            for row in range(self.shape[0]):
+                start, end = self.indptr[row], self.indptr[row+1]
+                if row in multipliers:
+                    self.data[start:end] *= multipliers[row]
+            # now that deltas have been accounted for, the superclass implementation
+            # of mean will work fine
+            result = csr_matrix((self.data, self.indices, self.indptr), shape=self.shape,
+                                dtype=self.dtype).mean(axis, dtype, out)
+            # before we can return, we must restore all data to their original values
+            for row in range(self.shape[0]):
+                start, end = self.indptr[row], self.indptr[row+1]
+                if row in multipliers:
+                    self.data[start:end] /= multipliers[row]
+            return result
 
     def toarray(self, order=None, out=None):
         """

@@ -54,4 +54,11 @@ class CorrectnessTests(unittest.TestCase):
         self.assertTrue(((self.delta_csr.mean(axis=1).flatten() - self.dense.mean(axis=1)) < FP_TOLERANCE).all(),
                         msg="Row wise means do not match")
 
+    def test_matrix_mean(self):
+        self.assertAlmostEqual(self.delta_csr.mean(), self.dense.mean())
+
+    def test_col_means(self):
+        self.assertTrue(((self.delta_csr.mean(axis=0).flatten() - self.dense.mean(axis=0)) < FP_TOLERANCE).all(),
+                        msg="Column wise means do not match")
+
 unittest.main()
