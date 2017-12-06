@@ -6,7 +6,7 @@ from src.delta import delta_csr_matrix
 
 M = 1000
 N = 500
-FP_TOLERANCE = 1e-5
+FP_TOLERANCE = 1e-10
 
 class CorrectnessTests(unittest.TestCase):
 
@@ -49,5 +49,9 @@ class CorrectnessTests(unittest.TestCase):
         dcsr_slice = self.delta_csr[slice_begin:slice_end, :]
         self.assertTrue((dcsr_slice.toarray() == self.dense[slice_begin:slice_end, :]).all(),
                         msg="Sliced array contains incorrect values")
+
+    def test_row_means(self):
+        self.assertTrue(((self.delta_csr.mean(axis=1).flatten() - self.dense.mean(axis=1)) < FP_TOLERANCE).all(),
+                        msg="Row wise means do not match")
 
 unittest.main()

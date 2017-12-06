@@ -442,6 +442,23 @@ class delta_csr_matrix(csr_matrix, IndexMixin):
         # right now we implement this simply using slicing
         return self._get_row_slice(i, slice(None))
 
+    def mean(self, axis=None, dtype=None, out=None):
+        """
+        Compute the arithmetic mean along the specified axis.
+        """
+
+        # behavior for handling deltas will vary depending on the axis
+        if axis == 1 or axis == -1:
+            # compute the means of each row ignoring deltas
+            means = super().mean(axis, dtype, out)
+            # now for each element corresponding to a delta row we correct it by
+            # adding the mean of its reference row. This works because the
+            # denominator (number of columns) is a constant for all rows.
+            for i in range(means.shape[0]):
+                if self.deltas[i] != i:
+                    means[i] += means[self.deltas[i]]
+            return means
+
     def toarray(self, order=None, out=None):
         """
         Convert this sparse matrix into a dense Numpy ndarray. We can mostly
